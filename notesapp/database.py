@@ -1,34 +1,49 @@
 import sqlite3
-
-conn = sqlite3.connect("../notes.db")  # Create or open database
+import os
+# constants
+conn = sqlite3.connect('notes.db')
 cursor = conn.cursor()
+DB_PATH = "notes.db"
 
-# Check if "projects" category exists
-cursor.execute("SELECT id FROM categories WHERE name = ?", ("projects",))
-projects = cursor.fetchone()
 
-# add notes if category exists
-if projects:
-    category_id = projects[0]
-else:
-    print("No category 'projects' found, creating one...")
-    cursor.execute("INSERT INTO categories (name) VALUES (?)", ("projects",))
-    category_id = cursor.lastrowid # Get the new category ID
+# basic sql error handling
+def get_connection():
+    """Returns a new database connection, ensuring the database exists."""
+    if not os.path.exists(DB_PATH):
+        print("Error: Database file 'notes.db' is missing. Please run setup.sql.")
+        exit(1)
+    return sqlite3.connect(DB_PATH)
 
-cursor.execute("INSERT INTO notes (title, category_id, content) VALUES (?, ?, ?)", ("My Note", category_id, "This is my first note in projects."))
-conn.commit()
+# helper functions
 
-# Retrieve notes
+def execute_query(query, params=(), fetchone=False, fetchall=False, commit=True):
+    """Executes a SQL query with optional parameters and handling."""
+    conn= get_connection()
+    cursor = conn.cursor()
+    cursor.execute(query, params)
 
-def retrieve_notes(category):
-    return cursor.execute("""
-        SELECT notes.id, notes.title, notes.content, categories.name AS category
-        FROM notes
-        JOIN categories ON notes.category_id = categories.id
-        WHERE categories.name = ?
-    """, (category,)).fetchall()
+    result = None
+    if fetchone:
+        result = cursor.fetchone()
+    elif fetchall:
+        result = cursor.fetchall()
+    if commit:
+        conn.commit()
+    conn.close()
+    return result
 
-cursor.execute("SELECT * FROM notes")
-print(cursor.fetchall())
+def find_make_category(category_name):
+    """Returns category ID, creating it if necessary."""
+    category = execute_query("select id FROM categories WHERE name = ?",
+                             (category_name,), fetchone=True)
+    if category:
+        return category[0]
 
-conn.close()
+    execute_query("INSERT INTO categories (name) VALUES (?)",
+                  (category_name,),
+                  commit = True)
+    return execute_query("SELECT id FROM categories WHERE name = ?",
+                         (category_name,),
+                         fetchone=True)[0]
+
+# def remove_note(category_id):
