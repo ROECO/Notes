@@ -1,11 +1,13 @@
 import sqlite3
 import os
 from os.path import exists
-
+import uuid
 # constants
 conn = sqlite3.connect('notes.db')
 cursor = conn.cursor()
 DB_PATH = "notes.db"
+
+
 
 
 # basic sql error handling
@@ -33,7 +35,10 @@ def execute_query(query, params=(), fetchone=False, fetchall=False, commit=True)
         conn.commit()
     conn.close()
     return result
+def generate_id():
+    return str(uuid.uuid4())
 
+# CRUD functions
 def find_make_category(category_name):
     """Returns category ID, creating it if necessary."""
     category = execute_query("select id FROM categories WHERE name = ?",
@@ -61,3 +66,9 @@ def remove_note(note_id):
     else:
          print("Error: Note id '{}' doesn't exist.".format(note_id))
          return False
+
+# def create_note(note_id):
+#     if note_id = is None:
+#         note = execute_query("INSERT INTO notes (name) VALUES (?)",)
+#
+#
