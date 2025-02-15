@@ -1,5 +1,7 @@
 import sqlite3
 import os
+from os.path import exists
+
 # constants
 conn = sqlite3.connect('notes.db')
 cursor = conn.cursor()
@@ -46,4 +48,16 @@ def find_make_category(category_name):
                          (category_name,),
                          fetchone=True)[0]
 
-# def remove_note(category_id):
+def remove_note(note_id):
+    note = execute_query("SELECT id FROM notes WHERE id = ?",
+                         (note_id,),
+                         fetchone=True)
+
+    if note:
+        execute_query("DELETE FROM notes WHERE id = ?",
+                      (int(note_id),),
+                      commit = True)
+        return True
+    else:
+         print("Error: Note id '{}' doesn't exist.".format(note_id))
+         return False
